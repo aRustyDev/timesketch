@@ -4,27 +4,26 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   PyLint:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        os: [ubuntu-22.04]
-        python-version: ["3.10"]
-
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.12"
       - name: Cache pip dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('requirements.txt', 'test_requirements.txt', 'Pipfile.lock') }}
+          key: ${{ runner.os }}-pip-3.12-${{ hashFiles('requirements.txt', 'test_requirements.txt', 'Pipfile.lock') }}
           restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+            ${{ runner.os }}-pip-3.12-
       - name: Install dependencies
         run: |
           pip install -r test_requirements.txt
@@ -45,29 +44,25 @@ jobs:
       - uses: psf/black@stable
 
   ESLint-frontend-ng:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ./timesketch/frontend-ng
-    strategy:
-      matrix:
-        os: [ubuntu-20.04, ubuntu-22.04]
-        node-version: ["20"]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      - name: Set up Node ${{ matrix.node-version }}
-        uses: actions/setup-node@v6
+      - name: Set up Node
+        uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: "20"
       - name: Cache yarn dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: ~/.cache/yarn
-          key: ${{ runner.os }}-yarn-${{ matrix.node-version }}-${{ hashFiles('timesketch/frontend-ng/yarn.lock') }}
+          key: ${{ runner.os }}-yarn-20-${{ hashFiles('timesketch/frontend-ng/yarn.lock') }}
           restore-keys: |
-            ${{ runner.os }}-yarn-${{ matrix.node-version }}-
+            ${{ runner.os }}-yarn-20-
       - name: Install dependencies
-        run: yarn add eslint@5.16.0
+        run: yarn install
       - name: Run eslint
         run: |
           git config pull.rebase false && git fetch -p origin master
